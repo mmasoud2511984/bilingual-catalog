@@ -1,13 +1,8 @@
-// lib/server/db.ts
-import { Pool } from "pg";
+import { neon } from "@neondatabase/serverless"
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // فعّل SSL فقط إن كنت تتصل بسيرفر خارجي يفرض SSL
-  ssl: false,
-});
-
-export async function query<T = any>(text: string, params?: any[]) {
-  const res = await pool.query<T>(text, params);
-  return res.rows;
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set")
 }
+
+// Reusable Neon SQL client
+export const sql = neon(process.env.DATABASE_URL)

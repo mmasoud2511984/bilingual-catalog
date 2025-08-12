@@ -27,6 +27,11 @@ export function SiteFooter() {
         <div>
           <h3 className="font-semibold mb-2">{lang === "ar" ? "روابط سريعة" : "Quick Links"}</h3>
           <ul className="grid gap-2 text-sm">
+            <li>
+              <Link className="hover:underline" href="/">
+                {lang === "ar" ? "الرئيسية" : "Home"}
+              </Link>
+            </li>
             {settings.footer.quickLinks.map((l) => (
               <li key={l.href}>
                 <Link className="hover:underline" href={l.href}>

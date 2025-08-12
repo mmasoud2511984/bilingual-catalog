@@ -25,29 +25,36 @@ export function ProductCard({
   const main = product.images[0]?.src || "/modern-tech-product.png"
 
   return (
-    <Card className={cn(mode === "list" ? "p-2" : "")}>
+    <Card className={cn("overflow-hidden transition-all duration-200 hover:shadow-lg", mode === "list" ? "p-2" : "")}>
       <CardContent className={cn("p-0", mode === "list" ? "flex gap-3" : "")}>
-        <Link href={`/products/${product.slug}`} className={cn("block", mode === "list" ? "w-40 shrink-0" : "")}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+        <Link
+          href={`/products/${product.slug}`}
+          className={cn("block", mode === "list" ? "w-32 sm:w-40 shrink-0" : "")}
+        >
           <img
             src={main || "/placeholder.svg"}
             alt={product.name[lang] || product.name.en || product.name.ar}
-            className={cn("w-full h-44 object-cover rounded-t-md", mode === "list" ? "h-28 rounded-md" : "")}
+            className={cn(
+              "w-full object-cover transition-transform duration-200 hover:scale-105",
+              mode === "list" ? "h-24 sm:h-28 rounded-md" : "h-40 sm:h-44 rounded-t-md",
+            )}
           />
         </Link>
         <div className={cn("p-3", mode === "list" ? "flex-1" : "")}>
           <Link href={`/products/${product.slug}`}>
-            <h3 className="font-medium line-clamp-1">{product.name[lang] || product.name.en || product.name.ar}</h3>
+            <h3 className="font-medium line-clamp-2 hover:text-primary transition-colors">
+              {product.name[lang] || product.name.en || product.name.ar}
+            </h3>
           </Link>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground mt-1">
             {(lang === "ar" ? "رقم" : "SKU") + ": "}
             {product.sku}
           </div>
-          <div className="mt-1 font-semibold">
+          <div className="mt-2 font-semibold text-lg">
             {currency} {product.price.toFixed(2)}
           </div>
           {settings.showStock ? (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground mt-1">
               {lang === "ar" ? "المتوفر:" : "Stock:"} {product.stock}
               {product.dozenQty ? (
                 <span className="ms-2">
@@ -56,27 +63,26 @@ export function ProductCard({
               ) : null}
             </div>
           ) : null}
-          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-2">
             {product.shortDescription[lang] || product.shortDescription.en || product.shortDescription.ar}
           </p>
-          <div className="mt-2 flex gap-2">
+          <div className="mt-3 flex flex-col sm:flex-row gap-2">
             {settings.whatsapp.enabled ? <WhatsappButton product={product} size="sm" /> : null}
             {settings.showCartButton ? (
-              <Button size="sm" className="gap-2" onClick={() => addItem(product)}>
+              <Button size="sm" className="gap-2 flex-1" onClick={() => addItem(product)}>
                 <ShoppingCart className="size-4" />
                 {lang === "ar" ? "أضف" : "Add"}
               </Button>
             ) : null}
           </div>
           {product.images.length > 1 ? (
-            <div className="mt-2 flex gap-1">
+            <div className="mt-3 flex gap-1 overflow-x-auto">
               {product.images.slice(0, 5).map((img) => (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={img.id}
                   src={img.src || "/placeholder.svg"}
                   alt={img.caption[lang] || img.caption.en || img.caption.ar || "thumb"}
-                  className="h-8 w-8 object-cover rounded border"
+                  className="h-6 w-6 sm:h-8 sm:w-8 object-cover rounded border flex-shrink-0"
                 />
               ))}
             </div>

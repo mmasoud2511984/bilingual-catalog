@@ -90,6 +90,7 @@ export function useSeedOnce() {
               logoAlt: { ar: "شعار", en: "Logo" },
             },
             slider: {
+              enabled: true,
               images: [
                 { id: "s1", src: "/slide-1-abstract-network.png" },
                 { id: "s2", src: "/slide-2-abstract.png" },

@@ -34,6 +34,26 @@ export type Category = {
   order: number
 }
 
+export type Order = {
+  id: string
+  productId: string
+  productName: Localized
+  productSku: string
+  productPrice: number
+  customerName: string
+  customerPhone: string
+  country: Localized
+  city: string
+  address: string
+  quantity: number
+  notes: string
+  totalAmount: number
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+  createdAt: number
+  orderDate: string
+  orderTime: string
+}
+
 export type Settings = {
   currency: Localized
   showCartButton: boolean
@@ -67,13 +87,17 @@ export type Settings = {
     quickLinks: { href: string; label: Localized }[]
     contact: Localized
   }
-  slider: { images: { id: string; src: string }[] }
+  slider: {
+    enabled: boolean
+    images: { id: string; src: string }[]
+  }
 }
 
 const KEYS = {
   products: "cms_products",
   categories: "cms_categories",
   settings: "cms_settings",
+  orders: "cms_orders",
 }
 
 function safeLocalSet<T>(key: string, val: T) {
@@ -136,13 +160,13 @@ export function getSettings(): Settings {
     footer: {
       logoSrc: "",
       description: { ar: "وصف مختصر في التذييل.", en: "Short footer description." },
-      quickLinks: [
-        { href: "/", label: { ar: "الرئيسية", en: "Home" } },
-        { href: "/products", label: { ar: "المنتجات", en: "Products" } },
-      ],
+      quickLinks: [{ href: "/", label: { ar: "الرئيسية", en: "Home" } }],
       contact: { ar: "العنوان: ...\nالهاتف: ...", en: "Address: ...\nPhone: ..." },
     },
-    slider: { images: [] },
+    slider: {
+      enabled: true,
+      images: [],
+    },
   }
   return safeLocalGet<Settings>(KEYS.settings, def)
 }
@@ -246,6 +270,51 @@ export function moveCategory(id: string, dir: "up" | "down") {
   // server reorder
   const ids = arr.map((c) => c.id)
   void api<{ ok: true }>(`/api/categories/reorder`, { method: "POST", body: JSON.stringify({ ids }) })
+}
+
+export function getAllOrders(): Order[] {
+  const arr = safeLocalGet<Order[]>(KEYS.orders, [])
+  return arr.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export function saveOrder(order: Order) {
+  // Ensure proper time format before saving
+  const orderToSave = {
+    ...order,
+    orderTime:
+      order.orderTime.includes("م") || order.orderTime.includes("ص")
+        ? new Date().toTimeString().split(" ")[0]
+        : order.orderTime,
+  }
+
+  const arr = getAllOrders()
+  const idx = arr.findIndex((x) => x.id === orderToSave.id)
+  if (idx >= 0) {
+    arr[idx] = orderToSave
+  } else {
+    arr.unshift(orderToSave)
+  }
+  safeLocalSet(KEYS.orders, arr)
+  // background sync to server
+  void api<{ ok: true; id: string }>("/api/orders", { method: "POST", body: JSON.stringify(orderToSave) })
+}
+
+export function updateOrderStatus(id: string, status: Order["status"]) {
+  const arr = getAllOrders()
+  const idx = arr.findIndex((x) => x.id === id)
+  if (idx >= 0) {
+    arr[idx].status = status
+    safeLocalSet(KEYS.orders, arr)
+    // server
+    void api<{ ok: true }>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify({ status }) })
+  }
+}
+
+export function deleteOrder(id: string) {
+  const arr = getAllOrders().filter((o) => o.id !== id)
+  safeLocalSet(KEYS.orders, arr)
+  // server
+  void api<{ ok: true }>(`/api/orders/${id}`, { method: "DELETE" })
 }
 
 function makeSlug(s: string) {

@@ -1,39 +1,27 @@
-cat > .gitignore <<'EOF'
-# Node/Next
-node_modules/
-.next/
-.next-cache/
-out/
-dist/
-coverage/
-.npm/
-.pnpm-store/
-cat > .gitignore <<'EOF'
-# Node/Next
-node_modules/
-.next/
-.next-cache/
-out/
-dist/
-coverage/
-.npm/
-.pnpm-store/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Env & secrets
-.env
-.env.*
-!.env.example
+# dependencies
+/node_modules
 
-# Logs & misc
-*.log
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-.DS_Store
-*.swp
-.idea/
-.vscode/
+.pnpm-debug.log*
 
-# Build artifacts
-*.tgz
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState } from "react"
 import {
   getAllProducts,
@@ -20,14 +22,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Trash } from "lucide-react"
+import { GripVertical, Trash, Edit } from "lucide-react"
 
 export function ProductsManager() {
   const { lang } = useLanguage()
   const [items, setItems] = useState(getAllProducts())
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const cats = getAllCategories()
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product)
+  }
+
+  const handleSave = (product: Product) => {
+    saveProduct(product)
+    setItems(getAllProducts())
+    setEditingProduct(null)
+  }
 
   return (
     <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
@@ -53,7 +66,7 @@ export function ProductsManager() {
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <ul className="grid gap-2">
                 {items.map((p) => (
-                  <SortableRow key={p.id} product={p} />
+                  <SortableRow key={p.id} product={p} onEdit={handleEdit} />
                 ))}
               </ul>
             </SortableContext>
@@ -61,12 +74,19 @@ export function ProductsManager() {
         </CardContent>
       </Card>
 
-      <Editor cats={cats} onSaved={() => setItems(getAllProducts())} />
+      <Editor
+        cats={cats}
+        editingProduct={editingProduct}
+        onSaved={(product) => {
+          handleSave(product)
+        }}
+        onCancel={() => setEditingProduct(null)}
+      />
     </div>
   )
 }
 
-function SortableRow({ product }: { product: Product }) {
+function SortableRow({ product, onEdit }: { product: Product; onEdit: (product: Product) => void }) {
   const { lang } = useLanguage()
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: product.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
@@ -76,7 +96,6 @@ function SortableRow({ product }: { product: Product }) {
       <button className="cursor-grab" {...attributes} {...listeners} aria-label="drag handle">
         <GripVertical className="size-4 text-muted-foreground" />
       </button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={product.images[0]?.src || "/placeholder.svg?height=60&width=80&query=product"}
         alt="thumb"
@@ -86,7 +105,12 @@ function SortableRow({ product }: { product: Product }) {
         <div className="font-medium">{product.name[lang] || product.name.en || product.name.ar}</div>
         <div className="text-xs text-muted-foreground">{product.sku}</div>
       </div>
-      <DeleteButton id={product.id} />
+      <div className="flex gap-1">
+        <Button variant="outline" size="icon" onClick={() => onEdit(product)}>
+          <Edit className="size-4" />
+        </Button>
+        <DeleteButton id={product.id} />
+      </div>
     </li>
   )
 }
@@ -98,8 +122,10 @@ function DeleteButton({ id }: { id: string }) {
       variant="destructive"
       size="icon"
       onClick={() => {
-        if (confirm(lang === "ar" ? "حذف المنتج؟" : "Delete product?")) deleteProduct(id)
-        window.location.reload()
+        if (confirm(lang === "ar" ? "حذف المنتج؟" : "Delete product?")) {
+          deleteProduct(id)
+          window.location.reload()
+        }
       }}
     >
       <Trash className="size-4" />
@@ -109,18 +135,53 @@ function DeleteButton({ id }: { id: string }) {
 
 function Editor({
   cats,
+  editingProduct,
   onSaved,
+  onCancel,
 }: {
   cats: { id: string; name: { ar: string; en: string } }[]
-  onSaved: () => void
+  editingProduct: Product | null
+  onSaved: (product: Product) => void
+  onCancel: () => void
 }) {
   const { lang } = useLanguage()
-  const [f, setF] = useState<Product>(blankProduct())
+  const [f, setF] = useState<Product>(editingProduct || blankProduct())
+
+  // Update form when editingProduct changes
+  React.useEffect(() => {
+    if (editingProduct) {
+      setF(editingProduct)
+    } else {
+      setF(blankProduct())
+    }
+  }, [editingProduct])
+
+  const handleSave = () => {
+    onSaved(f)
+    if (!editingProduct) {
+      setF(blankProduct()) // Reset form only for new products
+    }
+  }
+
+  const handleCancel = () => {
+    onCancel()
+    if (!editingProduct) {
+      setF(blankProduct())
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{lang === "ar" ? "إضافة / تعديل منتج" : "Add / Edit Product"}</CardTitle>
+        <CardTitle>
+          {editingProduct
+            ? lang === "ar"
+              ? "تعديل منتج"
+              : "Edit Product"
+            : lang === "ar"
+              ? "إضافة منتج"
+              : "Add Product"}
+        </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
         <Tabs defaultValue="general">
@@ -200,7 +261,6 @@ function Editor({
                 <div className="grid gap-2">
                   {f.images.map((img, i) => (
                     <div key={img.id} className="flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={img.src || "/placeholder.svg"}
                         alt={"img " + (i + 1)}
@@ -276,7 +336,7 @@ function Editor({
               <div>
                 <Label>{lang === "ar" ? "رابط الفيديو (اختياري)" : "Video URL (optional)"}</Label>
                 <Input
-                  placeholder="https://www.youtube.com/embed/..."
+                  placeholder="https://www.youtube.com/watch?v=..."
                   value={f.videoUrl || ""}
                   onChange={(e) => setF({ ...f, videoUrl: e.target.value })}
                 />
@@ -330,17 +390,16 @@ function Editor({
         </Tabs>
 
         <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              saveProduct(f)
-              onSaved()
-              alert(lang === "ar" ? "تم الحفظ" : "Saved")
-              setF(blankProduct())
-            }}
-          >
-            {lang === "ar" ? "حفظ المنتج" : "Save Product"}
+          <Button onClick={handleSave}>
+            {editingProduct
+              ? lang === "ar"
+                ? "حفظ التعديلات"
+                : "Save Changes"
+              : lang === "ar"
+                ? "حفظ المنتج"
+                : "Save Product"}
           </Button>
-          <Button variant="outline" onClick={() => setF(blankProduct())}>
+          <Button variant="outline" onClick={handleCancel}>
             {lang === "ar" ? "إلغاء" : "Cancel"}
           </Button>
         </div>

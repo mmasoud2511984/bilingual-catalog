@@ -1,8 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { getSettings, saveSettings } from "@/lib/store"
 import { useLanguage } from "@/components/language-provider"
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -21,13 +21,17 @@ export function HeaderSettingsForm() {
           <CardTitle>{lang === "ar" ? "إعدادات الهيدر" : "Header Settings"}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {/* Site name, colors, sizing */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label>{lang === "ar" ? "اسم الموقع (ع)" : "Site Name (AR)"}</Label>
               <Input
                 value={s.header.siteName.ar}
                 onChange={(e) =>
-                  setS({ ...s, header: { ...s.header, siteName: { ...s.header.siteName, ar: e.target.value } } })
+                  setS({
+                    ...s,
+                    header: { ...s.header, siteName: { ...s.header.siteName, ar: e.target.value } },
+                  })
                 }
               />
             </div>
@@ -36,7 +40,10 @@ export function HeaderSettingsForm() {
               <Input
                 value={s.header.siteName.en}
                 onChange={(e) =>
-                  setS({ ...s, header: { ...s.header, siteName: { ...s.header.siteName, en: e.target.value } } })
+                  setS({
+                    ...s,
+                    header: { ...s.header, siteName: { ...s.header.siteName, en: e.target.value } },
+                  })
                 }
               />
             </div>
@@ -54,7 +61,10 @@ export function HeaderSettingsForm() {
                 type="number"
                 value={String(s.header.siteNameFontSize)}
                 onChange={(e) =>
-                  setS({ ...s, header: { ...s.header, siteNameFontSize: Number(e.target.value || 18) } })
+                  setS({
+                    ...s,
+                    header: { ...s.header, siteNameFontSize: Number(e.target.value || 18) },
+                  })
                 }
               />
             </div>
@@ -76,9 +86,14 @@ export function HeaderSettingsForm() {
             <div>
               <Label>{lang === "ar" ? "اتجاه القائمة" : "Menu Orientation"}</Label>
               <select
-                className="border rounded-md h-10 px-3"
+                className="border rounded-md h-10 px-3 w-full"
                 value={s.header.menuOrientation}
-                onChange={(e) => setS({ ...s, header: { ...s.header, menuOrientation: e.target.value as any } })}
+                onChange={(e) =>
+                  setS({
+                    ...s,
+                    header: { ...s.header, menuOrientation: e.target.value as "horizontal" | "vertical" },
+                  })
+                }
               >
                 <option value="horizontal">{lang === "ar" ? "أفقي" : "Horizontal"}</option>
                 <option value="vertical">{lang === "ar" ? "رأسي" : "Vertical"}</option>
@@ -95,12 +110,16 @@ export function HeaderSettingsForm() {
           </div>
 
           <Separator />
+
+          {/* Top bar */}
           <div className="grid gap-3">
             <div className="flex items-center justify-between">
               <Label>{lang === "ar" ? "شريط علوي" : "Top Bar"}</Label>
               <Switch
                 checked={s.header.topBar.enabled}
-                onCheckedChange={(v) => setS({ ...s, header: { ...s.header, topBar: { ...s.header.topBar, enabled: v } } })}
+                onCheckedChange={(v) =>
+                  setS({ ...s, header: { ...s.header, topBar: { ...s.header.topBar, enabled: v } } })
+                }
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -143,7 +162,10 @@ export function HeaderSettingsForm() {
                       ...s,
                       header: {
                         ...s.header,
-                        topBar: { ...s.header.topBar, contact: { ...s.header.topBar.contact, ar: e.target.value } },
+                        topBar: {
+                          ...s.header.topBar,
+                          contact: { ...s.header.topBar.contact, ar: e.target.value },
+                        },
                       },
                     })
                   }
@@ -158,7 +180,10 @@ export function HeaderSettingsForm() {
                       ...s,
                       header: {
                         ...s.header,
-                        topBar: { ...s.header.topBar, contact: { ...s.header.topBar.contact, en: e.target.value } },
+                        topBar: {
+                          ...s.header.topBar,
+                          contact: { ...s.header.topBar.contact, en: e.target.value },
+                        },
                       },
                     })
                   }
@@ -168,18 +193,39 @@ export function HeaderSettingsForm() {
           </div>
 
           <Separator />
+
+          {/* Logo upload + alt */}
           <div className="grid gap-3">
             <Label>{lang === "ar" ? "شعار (تحميل)" : "Logo (Upload)"}</Label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const dataUrl = await fileToDataUrl(file)
-                setS({ ...s, header: { ...s.header, logoSrc: dataUrl } })
-              }}
-            />
+            <div className="flex items-center gap-3">
+              {s.header.logoSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={s.header.logoSrc || "/placeholder.svg"}
+                  alt="logo"
+                  className="h-10 w-auto object-contain rounded border bg-white"
+                />
+              ) : null}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const dataUrl = await fileToDataUrl(file)
+                  setS({ ...s, header: { ...s.header, logoSrc: dataUrl } })
+                }}
+              />
+              {s.header.logoSrc ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setS({ ...s, header: { ...s.header, logoSrc: "" } })}
+                >
+                  {lang === "ar" ? "حذف الشعار" : "Remove Logo"}
+                </Button>
+              ) : null}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label>{lang === "ar" ? "نص بديل (ع)" : "Alt Text (AR)"}</Label>
@@ -215,32 +261,43 @@ export function HeaderSettingsForm() {
         </CardContent>
       </Card>
 
+      {/* Live preview */}
       <Card>
         <CardHeader>
           <CardTitle>{lang === "ar" ? "معاينة الهيدر" : "Header Preview"}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-md p-4" style={{ backgroundColor: s.header.bgColor }}>
+          <div className="border rounded-md p-4 space-y-3" style={{ backgroundColor: s.header.bgColor }}>
             <div className="flex items-center gap-3">
               {s.header.logoSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={s.header.logoSrc || "/placeholder.svg"}
-                  alt="logo preview"
-                  className="h-10 w-auto object-contain"
+                  alt="preview logo"
+                  className="h-10 w-auto object-contain rounded border bg-white"
                 />
               ) : null}
-              <span
-                style={{ color: s.header.siteNameColor, fontSize: s.header.siteNameFontSize }}
-              >
+              <span style={{ color: s.header.siteNameColor, fontSize: s.header.siteNameFontSize }}>
                 {s.header.siteName.ar || s.header.siteName.en || "Site Name"}
               </span>
             </div>
             {s.header.topBar.enabled ? (
-              <div className="text-xs text-muted-foreground mt-3">
-                {s.header.topBar.text.ar} · {s.header.topBar.contact.ar}
+              <div className="text-xs text-muted-foreground">
+                {(s.header.topBar.text.ar || s.header.topBar.text.en) +
+                  " · " +
+                  (s.header.topBar.contact.ar || s.header.topBar.contact.en)}
               </div>
             ) : null}
+            <div className="text-xs">
+              {(lang === "ar" ? "اتجاه القائمة: " : "Menu: ") +
+                (s.header.menuOrientation === "horizontal"
+                  ? lang === "ar"
+                    ? "أفقي"
+                    : "Horizontal"
+                  : lang === "ar"
+                    ? "رأسي"
+                    : "Vertical")}
+            </div>
           </div>
         </CardContent>
       </Card>
