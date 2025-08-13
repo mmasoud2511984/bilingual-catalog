@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { useCart } from "@/components/cart-store"
 import { useLanguage } from "@/components/language-provider"
-import { getSettings } from "@/lib/store"
+import { getSettings, saveOrder } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard } from "lucide-react"
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { generateId } from "@/lib/utils"
 
 const COUNTRIES = [
   { code: "SA", name: { ar: "السعودية", en: "Saudi Arabia" }, prefix: "+966" },
@@ -219,7 +220,7 @@ function CheckoutDialog({ items, total, currency }: { items: any[]; total: numbe
       // Create order for each item in cart
       for (const item of items) {
         const orderData = {
-          id: `${Date.now()}-${item.id}`,
+          id: `${Date.now()}-${item.id}-${generateId().slice(0, 8)}`,
           productId: item.id,
           productName: { ar: item.name, en: item.name },
           productSku: item.sku,
@@ -232,14 +233,14 @@ function CheckoutDialog({ items, total, currency }: { items: any[]; total: numbe
           quantity: item.quantity,
           notes: formData.notes,
           totalAmount: item.price * item.quantity,
-          status: "pending",
+          status: "pending" as const,
           createdAt: Date.now(),
           orderDate: new Date().toISOString().split("T")[0],
           orderTime: new Date().toTimeString().split(" ")[0],
         }
 
-        // Save order (you can import saveOrder from lib/store)
-        // saveOrder(orderData)
+        // Save order
+        saveOrder(orderData)
       }
 
       alert(lang === "ar" ? "تم إرسال طلبك بنجاح!" : "Your order has been submitted successfully!")

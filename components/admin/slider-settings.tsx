@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { generateId } from "@/lib/utils"
 
 export function SliderSettings() {
   const { lang } = useLanguage()
@@ -92,7 +93,7 @@ export function SliderSettings() {
                   ...s,
                   slider: {
                     ...s.slider,
-                    images: [...s.slider.images, { id: crypto.randomUUID(), src: "/blank-presentation-slide.png" }],
+                    images: [...s.slider.images, { id: generateId(), src: "/blank-presentation-slide.png" }],
                   },
                 })
               }

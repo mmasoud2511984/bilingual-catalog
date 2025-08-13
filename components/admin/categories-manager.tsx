@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useLanguage } from "../language-provider"
 import { Trash } from "lucide-react"
+import { generateId } from "@/lib/utils"
 
 export function CategoriesManager() {
   const { lang } = useLanguage()
@@ -33,7 +34,7 @@ export function CategoriesManager() {
           <div className="flex items-end">
             <Button
               onClick={() => {
-                saveCategory({ id: crypto.randomUUID(), name: { ar, en }, order: items.length })
+                saveCategory({ id: generateId(), name: { ar, en }, order: items.length })
                 setAr("")
                 setEn("")
                 setItems(getAllCategories())

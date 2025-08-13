@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { generateId } from "@/lib/utils"
 
 export function FooterSettingsForm() {
   const { lang } = useLanguage()
@@ -125,7 +126,10 @@ export function FooterSettingsForm() {
                   ...s,
                   footer: {
                     ...s.footer,
-                    quickLinks: [...s.footer.quickLinks, { href: "#", label: { ar: "رابط", en: "Link" } }],
+                    quickLinks: [
+                      ...s.footer.quickLinks,
+                      { href: "#", label: { ar: "رابط", en: "Link" }, id: generateId() },
+                    ],
                   },
                 })
               }

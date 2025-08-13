@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { generateId } from "@/lib/utils"
 
 const COUNTRIES = [
   { code: "SA", name: { ar: "السعودية", en: "Saudi Arabia" }, prefix: "+966" },
@@ -199,7 +200,7 @@ function DirectOrderDialog({ product }: { product: any }) {
     setLoading(true)
     try {
       const orderData = {
-        id: Date.now().toString(),
+        id: generateId(),
         productId: product.id,
         productName: product.name,
         productSku: product.sku,

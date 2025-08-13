@@ -23,6 +23,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, Trash, Edit } from "lucide-react"
+import { generateId } from "@/lib/utils"
 
 export function ProductsManager() {
   const { lang } = useLanguage()
@@ -327,7 +328,7 @@ function Editor({
                       const dataUrl = await fileToDataUrl(file)
                       setF({
                         ...f,
-                        images: [...f.images, { id: crypto.randomUUID(), src: dataUrl, caption: { ar: "", en: "" } }],
+                        images: [...f.images, { id: generateId(), src: dataUrl, caption: { ar: "", en: "" } }],
                       })
                     }}
                   />
@@ -410,7 +411,7 @@ function Editor({
 
 function blankProduct(): Product {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     slug: "",
     sku: "",
     name: { ar: "", en: "" },

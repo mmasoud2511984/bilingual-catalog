@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { getAllProducts, getAllCategories, getSettings, saveSettings, saveProduct, saveCategory } from "./store"
+import { generateId } from "@/lib/utils"
 
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T | null> {
   try {
@@ -106,15 +107,15 @@ export function useSeedOnce() {
         if (getAllProducts().length === 0) {
           const demo = [
             {
-              id: crypto.randomUUID(),
+              id: generateId(),
               slug: "classic-shoe",
               sku: "SH-001",
               name: { ar: "حذاء كلاسيكي", en: "Classic Shoe" },
               shortDescription: { ar: "حذاء مريح وأنيق.", en: "Comfortable and stylish shoe." },
               description: { ar: "تفاصيل طويلة عن المنتج.", en: "Long details about the product." },
               images: [
-                { id: crypto.randomUUID(), src: "/single-athletic-shoe.png", caption: { ar: "صورة 1", en: "Image 1" } },
-                { id: crypto.randomUUID(), src: "/shoe-2.png", caption: { ar: "صورة 2", en: "Image 2" } },
+                { id: generateId(), src: "/single-athletic-shoe.png", caption: { ar: "صورة 1", en: "Image 1" } },
+                { id: generateId(), src: "/shoe-2.png", caption: { ar: "صورة 2", en: "Image 2" } },
               ],
               videoUrl: "",
               price: 199,
@@ -127,13 +128,13 @@ export function useSeedOnce() {
               order: 0,
             },
             {
-              id: crypto.randomUUID(),
+              id: generateId(),
               slug: "leather-bag",
               sku: "BG-010",
               name: { ar: "حقيبة جلد", en: "Leather Bag" },
               shortDescription: { ar: "حقيبة جلد فاخرة.", en: "Premium leather bag." },
               description: { ar: "وصف تفصيلي.", en: "Detailed description." },
-              images: [{ id: crypto.randomUUID(), src: "/bag-1.png", caption: { ar: "صورة 1", en: "Image 1" } }],
+              images: [{ id: generateId(), src: "/bag-1.png", caption: { ar: "صورة 1", en: "Image 1" } }],
               videoUrl: "",
               price: 349,
               stock: 10,
