@@ -1,53 +1,9 @@
 
-
 on:
   workflow_dispatch:
-    inputs:
-      force:
-        description: "تجاهُل التعديلات المحلية على السيرفر والمتابعة بالنشر؟"
-        required: false
-        default: "false"
 
 jobs:
-  preflight:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Preflight check on server (show local changes and stop if any unless forced)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT }}
-          script_stop: true
-          script: |
-            APP_DIR="/root/bilingual-catalog/bilingual-catalog"
-            FORCE="${{ github.event.inputs.force }}"
-            echo "== FORCE = ${FORCE}"
-            cd "$APP_DIR"
-
-            # تأكد من وجود مستودع Git
-            if [ ! -d ".git" ]; then
-              echo "::error::المجلد $APP_DIR ليس مستودع Git"
-              exit 2
-            fi
-
-            git fetch --all --prune
-
-            echo "== Local changes (git status --porcelain) =="
-            git status --porcelain || true
-
-            CHANGES=$(git status --porcelain | wc -l | tr -d ' ')
-            echo "== CHANGES COUNT: ${CHANGES} =="
-
-            if [ "$CHANGES" -gt 0 ] && [ "${FORCE}" != "true" ]; then
-              echo "::error::تم رصد ${CHANGES} تعديلاً محليًا على السيرفر. أوقفنا النشر."
-              echo "شغّل هذا الـ workflow يدويًا واختر input: force=true لتجاهل التعديلات (على مسؤوليتك)."
-              exit 1
-            fi
-
   deploy:
-    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - name: Run deploy script on server
@@ -57,7 +13,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT }}
-          script_stop: true
           script: |
             bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
+
+            name: Manual Deployment
 
