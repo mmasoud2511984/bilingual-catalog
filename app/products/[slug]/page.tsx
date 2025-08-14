@@ -3,11 +3,11 @@
 import { notFound, useParams } from "next/navigation"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { getProductBySlug, getSettings, saveOrder } from "@/lib/store"
+import { useProduct, useSettings } from "@/lib/hooks/use-api-data"
 import { ProductGallery } from "@/components/product-gallery"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart, MessageSquare, Star, Play } from "lucide-react"
+import { ShoppingCart, MessageSquare, Star, Play, Loader2 } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { WhatsappButton } from "@/components/whatsapp-button"
 import { useCart } from "@/components/cart-store"
@@ -33,8 +33,8 @@ const COUNTRIES = [
 
 export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>()
-  const product = getProductBySlug(params?.slug || "")
-  const settings = getSettings()
+  const { product, loading: productLoading, error } = useProduct(params?.slug || "")
+  const { settings, loading: settingsLoading } = useSettings()
   const { lang } = useLanguage()
   const { addItem } = useCart()
 
@@ -43,9 +43,28 @@ export default function ProductDetailPage() {
     document.documentElement.lang = lang
   }, [lang])
 
-  if (!product) return notFound()
+  const isLoading = productLoading || settingsLoading
 
-  const currency = settings.currency[lang] || settings.currency.en || settings.currency.ar
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <SiteHeader />
+        <main className="container px-4 py-6 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="size-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{lang === "ar" ? "جاري تحميل المنتج..." : "Loading product..."}</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return notFound()
+  }
+
+  const currency = settings?.currency[lang] || settings?.currency.en || settings?.currency.ar || "SAR"
 
   // Convert YouTube URL to embed format
   const getEmbedUrl = (url: string) => {
@@ -95,11 +114,11 @@ export default function ProductDetailPage() {
             <div className="text-2xl sm:text-3xl font-bold">
               {currency} {product.price.toFixed(2)}
             </div>
-            {settings.showStock ? (
+            {settings?.showStock ? (
               <div className="text-sm">
                 {lang === "ar" ? "الكمية المتاحة:" : "In stock:"} <span className="font-medium">{product.stock}</span>
                 {product.dozenQty ? (
-                  <span className="ms-3 text-muted-foreground">
+                  <span className="ms-2">
                     {lang === "ar" ? "كمية الدستة" : "Dozen qty"}: {product.dozenQty}
                   </span>
                 ) : null}
@@ -110,14 +129,14 @@ export default function ProductDetailPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-2">
-              {settings.whatsapp.enabled ? <WhatsappButton product={product} /> : null}
-              {settings.showCartButton ? (
+              {settings?.whatsapp.enabled ? <WhatsappButton product={product} /> : null}
+              {settings?.showCartButton ? (
                 <Button onClick={() => addItem(product)} className="gap-2">
                   <ShoppingCart className="size-4" />
                   {lang === "ar" ? "أضف إلى السلة" : "Add to cart"}
                 </Button>
               ) : null}
-              {settings.showDirectOrderButton ? <DirectOrderDialog product={product} /> : null}
+              {settings?.showDirectOrderButton ? <DirectOrderDialog product={product} /> : null}
             </div>
 
             <section className="mt-6">
@@ -146,7 +165,7 @@ export default function ProductDetailPage() {
               </section>
             ) : null}
 
-            {settings.enableComments ? (
+            {settings?.enableComments ? (
               <section className="mt-6">
                 <h2 className="font-semibold mb-2 flex items-center gap-2">
                   <Star className="size-4 text-yellow-500" />
@@ -214,25 +233,33 @@ function DirectOrderDialog({ product }: { product: any }) {
         notes: formData.notes,
         totalAmount: product.price * formData.quantity,
         status: "pending",
-        createdAt: Date.now(),
         orderDate: new Date().toISOString().split("T")[0],
-        orderTime: new Date().toTimeString().split(" ")[0], // Use 24-hour format HH:MM:SS
+        orderTime: new Date().toTimeString().split(" ")[0],
       }
 
-      saveOrder(orderData)
-
-      alert(lang === "ar" ? "تم إرسال طلبك بنجاح!" : "Your order has been submitted successfully!")
-      setIsOpen(false)
-      setFormData({
-        name: "",
-        phone: "",
-        countryCode: "SA",
-        phonePrefix: "+966",
-        city: "",
-        address: "",
-        quantity: 1,
-        notes: "",
+      // Send to API
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
       })
+
+      if (response.ok) {
+        alert(lang === "ar" ? "تم إرسال طلبك بنجاح!" : "Your order has been submitted successfully!")
+        setIsOpen(false)
+        setFormData({
+          name: "",
+          phone: "",
+          countryCode: "SA",
+          phonePrefix: "+966",
+          city: "",
+          address: "",
+          quantity: 1,
+          notes: "",
+        })
+      } else {
+        throw new Error("Failed to submit order")
+      }
     } catch (error) {
       alert(lang === "ar" ? "حدث خطأ في إرسال الطلب" : "Error submitting order")
     } finally {

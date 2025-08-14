@@ -1,19 +1,20 @@
 "use client"
 
 import Link from "next/link"
-import { getSettings } from "@/lib/store"
+import { useSettings } from "@/lib/hooks/use-api-data"
 import { useLanguage } from "./language-provider"
 
 export function SiteFooter() {
-  const settings = getSettings()
+  const { settings } = useSettings()
   const { lang } = useLanguage()
+
+  if (!settings) return null
 
   return (
     <footer className="border-t mt-8">
       <div className="container px-4 py-8 grid gap-6 md:grid-cols-3">
         <div className="flex items-start gap-3">
           {settings.footer.logoSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={settings.footer.logoSrc || "/placeholder.svg"}
               alt="Footer Logo"

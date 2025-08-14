@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { MessageCircle } from "lucide-react"
 import { useLanguage } from "./language-provider"
-import { getSettings, type Product } from "@/lib/store"
+import { useSettings } from "@/lib/hooks/use-api-data"
+import type { Product } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
 export function WhatsappButton({
@@ -14,7 +15,10 @@ export function WhatsappButton({
   size?: "sm" | "default" | "lg"
 }) {
   const { lang } = useLanguage()
-  const settings = getSettings()
+  const { settings } = useSettings()
+
+  if (!settings?.whatsapp.enabled) return null
+
   const phone = settings.whatsapp.phone.replace(/\D/g, "")
 
   const handleWhatsAppClick = async () => {

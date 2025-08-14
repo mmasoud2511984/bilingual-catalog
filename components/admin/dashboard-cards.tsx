@@ -4,12 +4,13 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Settings, Tags } from "lucide-react"
 import { useLanguage } from "../language-provider"
-import { getAllProducts, getAllCategories } from "@/lib/store"
+import { useAllProducts, useCategories } from "@/lib/hooks/use-api-data"
 
 export function DashboardCards() {
   const { lang } = useLanguage()
-  const pCount = getAllProducts().length
-  const cCount = getAllCategories().length
+  const { products } = useAllProducts()
+  const { categories } = useCategories()
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <Card>
@@ -18,7 +19,7 @@ export function DashboardCards() {
           <Package className="size-5" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">{pCount}</div>
+          <div className="text-3xl font-bold">{products.length}</div>
           <Link href="/admin/products" className="text-sm text-primary hover:underline">
             {lang === "ar" ? "إدارة المنتجات" : "Manage products"}
           </Link>
@@ -30,7 +31,7 @@ export function DashboardCards() {
           <Tags className="size-5" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">{cCount}</div>
+          <div className="text-3xl font-bold">{categories.length}</div>
           <Link href="/admin/categories" className="text-sm text-primary hover:underline">
             {lang === "ar" ? "إدارة الفئات" : "Manage categories"}
           </Link>

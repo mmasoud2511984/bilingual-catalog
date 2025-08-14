@@ -4,20 +4,21 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Slider } from "@/components/slider"
 import { ProductCard } from "@/components/product-card"
-import { getAllProducts, getAllCategories, getSettings } from "@/lib/store"
+import { useProducts, useCategories, useSettings } from "@/lib/hooks/use-api-data"
 import { useLanguage } from "@/components/language-provider"
 import { useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Grid, List, Search } from "lucide-react"
+import { Grid, List, Search, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export default function HomePage() {
   const { lang } = useLanguage()
-  const [products] = useState(getAllProducts())
-  const [categories] = useState(getAllCategories())
-  const [settings] = useState(getSettings())
+  const { products, loading: productsLoading } = useProducts()
+  const { categories, loading: categoriesLoading } = useCategories()
+  const { settings, loading: settingsLoading } = useSettings()
+
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("order")
@@ -36,7 +37,9 @@ export default function HomePage() {
   }, [lang])
 
   const filteredProducts = useMemo(() => {
-    let filtered = products
+    if (!products) return []
+
+    let filtered = [...products]
 
     // Filter by search query
     if (searchQuery.trim()) {
@@ -79,13 +82,30 @@ export default function HomePage() {
     return filtered
   }, [products, searchQuery, selectedCategory, sortBy, lang])
 
+  const isLoading = productsLoading || categoriesLoading || settingsLoading
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <SiteHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="size-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{lang === "ar" ? "جاري تحميل البيانات..." : "Loading data..."}</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1">
-        {settings.slider.enabled && settings.slider.images.length > 0 ? (
+        {settings?.slider.enabled && settings.slider.images.length > 0 ? (
           <section className="mb-8">
-            <Slider />
+            <Slider images={settings.slider.images} />
           </section>
         ) : null}
 
@@ -112,7 +132,7 @@ export default function HomePage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{lang === "ar" ? "جميع الفئات" : "All Categories"}</SelectItem>
-                    {categories.map((cat) => (
+                    {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name[lang] || cat.name.en || cat.name.ar}
                       </SelectItem>

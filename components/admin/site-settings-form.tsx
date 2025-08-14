@@ -1,18 +1,62 @@
 "use client"
 
-import { getSettings, saveSettings } from "@/lib/store"
+import { useSettings } from "@/lib/hooks/use-api-data"
 import { useLanguage } from "@/components/language-provider"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Loader2 } from "lucide-react"
 
 export function SiteSettingsForm() {
   const { lang } = useLanguage()
-  const [s, setS] = useState(getSettings())
+  const { settings, loading, refetch } = useSettings()
+  const [s, setS] = useState(settings)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (settings) {
+      setS(settings)
+    }
+  }, [settings])
+
+  const handleSave = async () => {
+    if (!s) return
+
+    setSaving(true)
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(s),
+      })
+
+      if (response.ok) {
+        await refetch()
+        alert(lang === "ar" ? "تم الحفظ" : "Saved")
+      } else {
+        throw new Error("Failed to save settings")
+      }
+    } catch (error) {
+      alert(lang === "ar" ? "حدث خطأ في الحفظ" : "Error saving settings")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading || !s) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader2 className="size-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">{lang === "ar" ? "جاري تحميل الإعدادات..." : "Loading settings..."}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-6">
@@ -108,13 +152,8 @@ export function SiteSettingsForm() {
           </div>
 
           <div className="pt-2">
-            <Button
-              onClick={() => {
-                saveSettings(s)
-                alert(lang === "ar" ? "تم الحفظ" : "Saved")
-              }}
-            >
-              {lang === "ar" ? "حفظ" : "Save"}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (lang === "ar" ? "جاري الحفظ..." : "Saving...") : lang === "ar" ? "حفظ" : "Save"}
             </Button>
           </div>
         </CardContent>

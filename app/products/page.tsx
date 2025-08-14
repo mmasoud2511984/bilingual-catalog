@@ -1,32 +1,32 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { LayoutGrid, LayoutList, Search } from "lucide-react"
+import { LayoutGrid, LayoutList, Search, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ProductCard } from "@/components/product-card"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { getAllCategories, getAllProducts } from "@/lib/store"
+import { useProducts, useCategories } from "@/lib/hooks/use-api-data"
 import { useLanguage } from "@/components/language-provider"
-import { useSeedOnce } from "@/lib/seed"
 
 type ViewMode = "grid" | "list"
 
 export default function ProductsPage() {
-  useSeedOnce()
   const { lang } = useLanguage()
+  const { products, loading: productsLoading } = useProducts()
+  const { categories, loading: categoriesLoading } = useCategories()
+
   const [query, setQuery] = useState("")
   const [cat, setCat] = useState<string>("all")
   const [sort, setSort] = useState<string>("date_desc")
   const [mode, setMode] = useState<ViewMode>("grid")
 
-  const categories = getAllCategories()
-  const products = getAllProducts()
-
   const filtered = useMemo(() => {
-    let arr = products.slice()
+    if (!products) return []
+
+    let arr = [...products]
     if (cat !== "all") arr = arr.filter((p) => p.categoryId === cat)
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -60,6 +60,23 @@ export default function ProductsPage() {
     document.documentElement.lang = lang
   }, [lang])
 
+  const isLoading = productsLoading || categoriesLoading
+
+  if (isLoading) {
+    return (
+      <div className="min-h-dvh flex flex-col">
+        <SiteHeader />
+        <main className="container px-4 py-6 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="size-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{lang === "ar" ? "جاري تحميل المنتجات..." : "Loading products..."}</p>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-dvh flex flex-col">
       <SiteHeader />
@@ -82,7 +99,7 @@ export default function ProductsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{lang === "ar" ? "الكل" : "All"}</SelectItem>
-                  {categories.map((c) => (
+                  {categories?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name[lang] || c.name.en || c.name.ar}
                     </SelectItem>

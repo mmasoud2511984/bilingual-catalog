@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ShoppingCart, Menu, Globe, Search } from "lucide-react"
 import { useLanguage } from "./language-provider"
 import { useCart } from "./cart-store"
-import { getSettings } from "@/lib/store"
+import { useSettings } from "@/lib/hooks/use-api-data"
 import { useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,13 +12,14 @@ import { cn } from "@/lib/utils"
 import { ThemeToggle } from "./theme-toggle"
 
 export function SiteHeader() {
-  const settings = getSettings()
+  const { settings } = useSettings()
   const { lang, setLang } = useLanguage()
   const { count } = useCart()
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const siteName = settings.header.siteName[lang] || settings.header.siteName.en || settings.header.siteName.ar
-  const logoAlt = settings.header.logoAlt[lang] || settings.header.logoAlt.en || settings.header.logoAlt.ar
+  const siteName =
+    settings?.header.siteName[lang] || settings?.header.siteName.en || settings?.header.siteName.ar || "Catalog"
+  const logoAlt = settings?.header.logoAlt[lang] || settings?.header.logoAlt.en || settings?.header.logoAlt.ar || "Logo"
 
   const MenuLinks = useMemo(
     () => (
@@ -26,56 +27,63 @@ export function SiteHeader() {
         <Link
           href="/"
           className={cn("px-3 py-2 rounded-md transition-colors", "hover:opacity-90")}
-          style={{ color: settings.header.menuItemColor }}
+          style={{ color: settings?.header.menuItemColor || "#222222" }}
         >
           {lang === "ar" ? "الرئيسية" : "Home"}
         </Link>
         <Link
           href="/admin"
           className={cn("px-3 py-2 rounded-md transition-colors", "hover:opacity-90")}
-          style={{ color: settings.header.menuItemColor }}
+          style={{ color: settings?.header.menuItemColor || "#222222" }}
         >
           {lang === "ar" ? "لوحة التحكم" : "Admin"}
         </Link>
       </>
     ),
-    [lang, settings.header.menuItemColor],
+    [lang, settings?.header.menuItemColor],
   )
 
   return (
     <header
-      className={cn(settings.header.sticky ? "sticky top-0 z-50" : "", "w-full border-b backdrop-blur-sm")}
-      style={{ backgroundColor: settings.header.bgColor }}
+      className={cn(settings?.header.sticky ? "sticky top-0 z-50" : "", "w-full border-b backdrop-blur-sm")}
+      style={{ backgroundColor: settings?.header.bgColor || "#ffffff" }}
     >
-      {settings.header.topBar.enabled ? (
-        <div className="text-xs sm:text-sm w-full" style={{ backgroundColor: settings.header.bgColor }}>
+      {settings?.header.topBar.enabled ? (
+        <div className="text-xs sm:text-sm w-full" style={{ backgroundColor: settings?.header.bgColor || "#ffffff" }}>
           <div className="container px-4 py-2 flex items-center justify-between">
             <div className="text-muted-foreground">
-              {settings.header.topBar.text[lang] || settings.header.topBar.text.en || settings.header.topBar.text.ar}
+              {settings?.header.topBar.text[lang] ||
+                settings?.header.topBar.text.en ||
+                settings?.header.topBar.text.ar ||
+                ""}
             </div>
             <div className="hidden sm:block text-muted-foreground">
-              {settings.header.topBar.contact[lang] ||
-                settings.header.topBar.contact.en ||
-                settings.header.topBar.contact.ar}
+              {settings?.header.topBar.contact[lang] ||
+                settings?.header.topBar.contact.en ||
+                settings?.header.topBar.contact.ar ||
+                ""}
             </div>
           </div>
         </div>
       ) : null}
       <div className="container px-4 py-3 flex items-center gap-3">
         <Link href="/" className="flex items-center gap-3">
-          {settings.header.logoSrc ? (
+          {settings?.header.logoSrc ? (
             <img
               src={settings.header.logoSrc || "/placeholder.svg"}
-              alt={logoAlt || "Logo"}
+              alt={logoAlt}
               className="h-8 sm:h-10 w-auto"
               style={{ objectFit: "contain" }}
             />
           ) : null}
           <span
             className="font-bold text-sm sm:text-base"
-            style={{ color: settings.header.siteNameColor, fontSize: `${settings.header.siteNameFontSize}px` }}
+            style={{
+              color: settings?.header.siteNameColor || "#111111",
+              fontSize: `${settings?.header.siteNameFontSize || 20}px`,
+            }}
           >
-            {siteName || "Catalog"}
+            {siteName}
           </span>
         </Link>
 
@@ -147,7 +155,7 @@ export function SiteHeader() {
       </div>
 
       <nav className="container px-4 pb-3">
-        {settings.header.menuOrientation === "horizontal" ? (
+        {settings?.header.menuOrientation === "horizontal" ? (
           <div className="hidden lg:flex items-center gap-1">{MenuLinks}</div>
         ) : (
           <div className="hidden lg:flex flex-col gap-1">{MenuLinks}</div>

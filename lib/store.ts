@@ -1,6 +1,7 @@
 "use client"
 
-// Local cache types and helpers, plus background sync to server APIs.
+// This file now serves as a simple wrapper around API calls
+// All data is fetched from the server APIs instead of localStorage
 
 export type Localized = { ar: string; en: string }
 
@@ -9,6 +10,7 @@ export type ProductImage = {
   src: string
   caption: Localized
 }
+
 export type Product = {
   id: string
   slug: string
@@ -23,7 +25,7 @@ export type Product = {
   dozenQty?: number
   size?: string
   featured?: boolean
-  active?: boolean // إضافة جديدة
+  active?: boolean
   categoryId?: string
   createdAt: number
   order: number
@@ -94,44 +96,37 @@ export type Settings = {
   }
 }
 
-const KEYS = {
-  products: "cms_products",
-  categories: "cms_categories",
-  settings: "cms_settings",
-  orders: "cms_orders",
+// Legacy functions - these are now deprecated
+// Use the new hooks from @/lib/hooks/use-api-data instead
+
+export function getAllProducts(): Product[] {
+  console.warn("getAllProducts is deprecated. Use useProducts hook instead.")
+  return []
 }
 
-function safeLocalSet<T>(key: string, val: T) {
-  try {
-    localStorage.setItem(key, JSON.stringify(val))
-  } catch {}
-}
-function safeLocalGet<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
+export function getAllProductsForAdmin(): Product[] {
+  console.warn("getAllProductsForAdmin is deprecated. Use useAllProducts hook instead.")
+  return []
 }
 
-async function api<T>(url: string, init?: RequestInit): Promise<T | null> {
-  try {
-    const res = await fetch(url, {
-      ...init,
-      headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-      cache: "no-store",
-    })
-    if (!res.ok) return null
-    return (await res.json()) as T
-  } catch {
-    return null
-  }
+export function getProductBySlug(slug: string): Product | undefined {
+  console.warn("getProductBySlug is deprecated. Use useProduct hook instead.")
+  return undefined
+}
+
+export function getAllCategories(): Category[] {
+  console.warn("getAllCategories is deprecated. Use useCategories hook instead.")
+  return []
+}
+
+export function getAllOrders(): Order[] {
+  console.warn("getAllOrders is deprecated. Use useOrders hook instead.")
+  return []
 }
 
 export function getSettings(): Settings {
-  const def: Settings = {
+  console.warn("getSettings is deprecated. Use useSettings hook instead.")
+  return {
     currency: { ar: "ر.س", en: "SAR" },
     showCartButton: true,
     showDirectOrderButton: true,
@@ -145,7 +140,7 @@ export function getSettings(): Settings {
     header: {
       logoSrc: "",
       logoAlt: { ar: "", en: "" },
-      siteName: { ar: "", en: "" },
+      siteName: { ar: "كتالوج", en: "Catalog" },
       siteNameColor: "#111111",
       siteNameFontSize: 20,
       sticky: true,
@@ -169,164 +164,55 @@ export function getSettings(): Settings {
       images: [],
     },
   }
-  return safeLocalGet<Settings>(KEYS.settings, def)
 }
 
-export function saveSettings(s: Settings) {
-  safeLocalSet(KEYS.settings, s)
-  // background sync to server
-  void api<{ ok: true }>("/api/settings", { method: "PUT", body: JSON.stringify(s) })
-}
-
-export function getAllProducts(): Product[] {
-  const arr = safeLocalGet<Product[]>(KEYS.products, [])
-  return arr.filter((p) => p.active !== false).sort((a, b) => a.order - b.order)
-}
-
-export function getAllProductsForAdmin(): Product[] {
-  const arr = safeLocalGet<Product[]>(KEYS.products, [])
-  return arr.sort((a, b) => a.order - b.order)
-}
-
-export function getProductBySlug(slug: string): Product | undefined {
-  return getAllProducts().find((p) => p.slug === slug)
-}
-
+// These functions are still used for API operations
 export function saveProduct(p: Product) {
-  const arr = getAllProducts()
-  const idx = arr.findIndex((x) => x.id === p.id)
-  const slug = p.slug || makeSlug(p.name.en || p.name.ar || "product")
-  const prod: Product = { ...p, slug }
-  if (idx >= 0) {
-    arr[idx] = prod
-  } else {
-    prod.order = arr.length
-    arr.push(prod)
-  }
-  safeLocalSet(KEYS.products, arr)
-
-  // background sync to server
-  const body = {
-    ...prod,
-    // map image order for server
-    images: prod.images.map((img, i) => ({ ...img, position: i })),
-  }
-  void api<{ ok: true; id: string }>("/api/products", { method: "POST", body: JSON.stringify(body) })
+  // This is handled by the API now
+  console.warn("saveProduct should use API directly")
 }
 
 export function deleteProduct(id: string) {
-  const arr = getAllProducts().filter((p) => p.id !== id)
-  safeLocalSet(KEYS.products, arr)
-  // server
-  void api<{ ok: true }>(`/api/products/${id}`, { method: "DELETE" })
-}
-
-export function reorderProducts(ids: string[]) {
-  const arr = getAllProducts()
-  const map = new Map(ids.map((id, index) => [id, index]))
-  arr.forEach((p) => {
-    const order = map.get(p.id)
-    if (order != null) p.order = order
-  })
-  safeLocalSet(KEYS.products, arr)
-  // server
-  void api<{ ok: true }>(`/api/products/reorder`, { method: "POST", body: JSON.stringify({ ids }) })
-}
-
-export function getAllCategories(): Category[] {
-  const arr = safeLocalGet<Category[]>(KEYS.categories, [])
-  return arr.sort((a, b) => a.order - b.order)
+  // This is handled by the API now
+  console.warn("deleteProduct should use API directly")
 }
 
 export function saveCategory(c: Category) {
-  const arr = getAllCategories()
-  const idx = arr.findIndex((x) => x.id === c.id)
-  if (idx >= 0) arr[idx] = c
-  else arr.push(c)
-  arr.forEach((x, i) => (x.order = i))
-  safeLocalSet(KEYS.categories, arr)
-  // server
-  void api<{ ok: true; id: string }>(`/api/categories`, { method: "POST", body: JSON.stringify(c) })
+  // This is handled by the API now
+  console.warn("saveCategory should use API directly")
 }
 
 export function deleteCategory(id: string) {
-  const arr = getAllCategories().filter((c) => c.id !== id)
-  arr.forEach((x, i) => (x.order = i))
-  safeLocalSet(KEYS.categories, arr)
-  // server
-  void api<{ ok: true }>(`/api/categories/${id}`, { method: "DELETE" })
-}
-
-export function moveCategory(id: string, dir: "up" | "down") {
-  const arr = getAllCategories()
-  const i = arr.findIndex((c) => c.id === id)
-  if (i === -1) return
-  if (dir === "up" && i > 0) {
-    const tmp = arr[i - 1]
-    arr[i - 1] = arr[i]
-    arr[i] = tmp
-  }
-  if (dir === "down" && i < arr.length - 1) {
-    const tmp = arr[i + 1]
-    arr[i + 1] = arr[i]
-    arr[i] = tmp
-  }
-  arr.forEach((c, idx) => (c.order = idx))
-  safeLocalSet(KEYS.categories, arr)
-  // server reorder
-  const ids = arr.map((c) => c.id)
-  void api<{ ok: true }>(`/api/categories/reorder`, { method: "POST", body: JSON.stringify({ ids }) })
-}
-
-export function getAllOrders(): Order[] {
-  const arr = safeLocalGet<Order[]>(KEYS.orders, [])
-  return arr.sort((a, b) => b.createdAt - a.createdAt)
+  // This is handled by the API now
+  console.warn("deleteCategory should use API directly")
 }
 
 export function saveOrder(order: Order) {
-  // Ensure proper time format before saving
-  const orderToSave = {
-    ...order,
-    orderTime:
-      order.orderTime.includes("م") || order.orderTime.includes("ص")
-        ? new Date().toTimeString().split(" ")[0]
-        : order.orderTime,
-  }
-
-  const arr = getAllOrders()
-  const idx = arr.findIndex((x) => x.id === orderToSave.id)
-  if (idx >= 0) {
-    arr[idx] = orderToSave
-  } else {
-    arr.unshift(orderToSave)
-  }
-  safeLocalSet(KEYS.orders, arr)
-  // background sync to server
-  void api<{ ok: true; id: string }>("/api/orders", { method: "POST", body: JSON.stringify(orderToSave) })
+  // This is handled by the API now
+  console.warn("saveOrder should use API directly")
 }
 
 export function updateOrderStatus(id: string, status: Order["status"]) {
-  const arr = getAllOrders()
-  const idx = arr.findIndex((x) => x.id === id)
-  if (idx >= 0) {
-    arr[idx].status = status
-    safeLocalSet(KEYS.orders, arr)
-    // server
-    void api<{ ok: true }>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify({ status }) })
-  }
+  // This is handled by the API now
+  console.warn("updateOrderStatus should use API directly")
 }
 
 export function deleteOrder(id: string) {
-  const arr = getAllOrders().filter((o) => o.id !== id)
-  safeLocalSet(KEYS.orders, arr)
-  // server
-  void api<{ ok: true }>(`/api/orders/${id}`, { method: "DELETE" })
+  // This is handled by the API now
+  console.warn("deleteOrder should use API directly")
 }
 
-function makeSlug(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
+export function saveSettings(s: Settings) {
+  // This is handled by the API now
+  console.warn("saveSettings should use API directly")
+}
+
+export function moveCategory(id: string, dir: "up" | "down") {
+  // This is handled by the API now
+  console.warn("moveCategory should use API directly")
+}
+
+export function reorderProducts(ids: string[]) {
+  // This is handled by the API now
+  console.warn("reorderProducts should use API directly")
 }

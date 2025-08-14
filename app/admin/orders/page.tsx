@@ -1,14 +1,14 @@
 "use client"
 
 import { AdminGate } from "@/components/admin/admin-gate"
-import { getAllOrders, updateOrderStatus, deleteOrder } from "@/lib/store"
+import { useOrders } from "@/lib/hooks/use-api-data"
 import { useLanguage } from "@/components/language-provider"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Trash2, Eye, RefreshCw } from "lucide-react"
+import { Trash2, Eye, RefreshCw, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 const STATUS_COLORS = {
@@ -21,13 +21,12 @@ const STATUS_COLORS = {
 
 export default function OrdersPage() {
   const { lang } = useLanguage()
-  const [orders, setOrders] = useState(getAllOrders())
-  const [loading, setLoading] = useState(false)
+  const { orders, loading, refetch } = useOrders()
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("date_desc")
 
   const filteredAndSortedOrders = useMemo(() => {
-    let filtered = orders
+    let filtered = [...orders]
 
     // Filter by status
     if (statusFilter !== "all") {
@@ -61,79 +60,41 @@ export default function OrdersPage() {
     return filtered
   }, [orders, statusFilter, sortBy])
 
-  // Function to fetch orders from server
-  const fetchOrdersFromServer = async () => {
-    setLoading(true)
+  const handleStatusChange = async (orderId: string, newStatus: any) => {
     try {
-      const response = await fetch("/api/orders", { cache: "no-store" })
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
       if (response.ok) {
-        const data = await response.json()
-        if (Array.isArray(data.orders)) {
-          // Convert server format to local format
-          const serverOrders = data.orders.map((order: any) => ({
-            id: order.id,
-            productId: order.product_id,
-            productName: {
-              ar: order.product_name_ar,
-              en: order.product_name_en,
-            },
-            productSku: order.product_sku,
-            productPrice: Number(order.product_price),
-            customerName: order.customer_name,
-            customerPhone: order.customer_phone,
-            country: {
-              ar: order.country_ar || "",
-              en: order.country_en || "",
-            },
-            city: order.city,
-            address: order.address,
-            quantity: Number(order.quantity),
-            notes: order.notes || "",
-            totalAmount: Number(order.total_amount),
-            status: order.status,
-            createdAt: new Date(order.created_at).getTime(),
-            orderDate: order.order_date,
-            orderTime: order.order_time,
-          }))
-
-          // Merge with local orders
-          const localOrders = getAllOrders()
-          const allOrders = [...serverOrders, ...localOrders]
-
-          // Remove duplicates based on ID
-          const uniqueOrders = allOrders.filter(
-            (order, index, self) => index === self.findIndex((o) => o.id === order.id),
-          )
-
-          // Sort by creation date (newest first)
-          uniqueOrders.sort((a, b) => b.createdAt - a.createdAt)
-
-          setOrders(uniqueOrders)
-        }
+        await refetch()
+        alert(lang === "ar" ? "تم تحديث حالة الطلب" : "Order status updated")
+      } else {
+        throw new Error("Failed to update order status")
       }
     } catch (error) {
-      console.error("Error fetching orders:", error)
-      // Fallback to local orders only
-      setOrders(getAllOrders())
-    } finally {
-      setLoading(false)
+      alert(lang === "ar" ? "حدث خطأ في تحديث الطلب" : "Error updating order")
     }
   }
 
-  // Load orders on component mount
-  useEffect(() => {
-    fetchOrdersFromServer()
-  }, [])
-
-  const handleStatusChange = (orderId: string, newStatus: any) => {
-    updateOrderStatus(orderId, newStatus)
-    setOrders((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)))
-  }
-
-  const handleDelete = (orderId: string) => {
+  const handleDelete = async (orderId: string) => {
     if (confirm(lang === "ar" ? "هل أنت متأكد من حذف هذا الطلب؟" : "Are you sure you want to delete this order?")) {
-      deleteOrder(orderId)
-      setOrders((prev) => prev.filter((order) => order.id !== orderId))
+      try {
+        const response = await fetch(`/api/orders/${orderId}`, {
+          method: "DELETE",
+        })
+
+        if (response.ok) {
+          await refetch()
+          alert(lang === "ar" ? "تم حذف الطلب بنجاح" : "Order deleted successfully")
+        } else {
+          throw new Error("Failed to delete order")
+        }
+      } catch (error) {
+        alert(lang === "ar" ? "حدث خطأ في حذف الطلب" : "Error deleting order")
+      }
     }
   }
 
@@ -148,19 +109,27 @@ export default function OrdersPage() {
     return statusMap[status as keyof typeof statusMap]?.[lang] || status
   }
 
+  if (loading) {
+    return (
+      <AdminGate>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="size-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">{lang === "ar" ? "جاري تحميل الطلبات..." : "Loading orders..."}</p>
+          </div>
+        </div>
+      </AdminGate>
+    )
+  }
+
   return (
     <AdminGate>
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">{lang === "ar" ? "إدارة الطلبات" : "Orders Management"}</h1>
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={fetchOrdersFromServer}
-              disabled={loading}
-              className="gap-2 bg-transparent"
-            >
-              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            <Button variant="outline" onClick={refetch} className="gap-2 bg-transparent">
+              <RefreshCw className="size-4" />
               {lang === "ar" ? "تحديث" : "Refresh"}
             </Button>
             <div className="text-sm text-muted-foreground">
@@ -208,13 +177,7 @@ export default function OrdersPage() {
           </div>
         </div>
 
-        {loading && (
-          <div className="text-center py-4">
-            <div className="text-muted-foreground">{lang === "ar" ? "جاري تحميل الطلبات..." : "Loading orders..."}</div>
-          </div>
-        )}
-
-        {filteredAndSortedOrders.length === 0 && !loading ? (
+        {filteredAndSortedOrders.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <div className="text-muted-foreground">
