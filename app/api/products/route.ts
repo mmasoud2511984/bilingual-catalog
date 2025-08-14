@@ -1,117 +1,82 @@
-import { NextResponse } from "next/server"
-import { sql } from "@/lib/server/db"
-import type { Product } from "@/lib/server/types"
+import { NextResponse } from "next/server";
+import { query } from "@/lib/server/db";
+import type { Product } from "@/lib/server/types";
 
-// GET /api/products
+// ✅ GET /api/products
 export async function GET() {
-  const rows = await sql /* sql */`
-    select 
-      p.id,
-      p.slug,
-      p.sku,
-      p.name,
-      p.short_description as "shortDescription",
-      p.description,
-      p.price::float as price,
-      p.stock,
-      p.dozen_qty as "dozenQty",
-      p.size,
-      p.featured,
-      p.category_id as "categoryId",
-      p.created_at as "createdAt",
-      p."order",
-      coalesce(
-        json_agg(
-          json_build_object(
-            'id', i.id,
-            'src', i.src,
-            'caption', i.caption,
-            'position', i.position
-          ) 
-          order by i.position
-        ) filter (where i.id is not null),
-        '[]'
-      ) as images
-    from products p
-    left join product_images i on i.product_id = p.id
-    group by p.id
-    order by p."order" asc, p.created_at desc;
-  `
-  return NextResponse.json(rows as Product[])
+  try {
+    const rows = await query<Product>(/* sql */`
+      SELECT 
+        p.id,
+        p.slug,
+        p.sku,
+        p.name,
+        p.short_description AS "shortDescription",
+        p.description,
+        p.price::float AS price,
+        p.stock,
+        p.dozen_qty AS "dozenQty",
+        p.size,
+        p.featured,
+        p.category_id AS "categoryId",
+        p.created_at AS "createdAt",
+        p."order",
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', pi.id,
+              'url', pi.url
+            )
+          ) FILTER (WHERE pi.id IS NOT NULL),
+          '[]'
+        ) AS images
+      FROM products p
+      LEFT JOIN product_images pi ON p.id = pi.product_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+    `);
+    return NextResponse.json(rows);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+  }
 }
 
-// POST /api/products (create or update with images)
+// ✅ POST /api/products
 export async function POST(req: Request) {
-  const body = await req.json()
-  const {
-    id,
-    slug,
-    sku,
-    name,
-    shortDescription,
-    description,
-    price,
-    stock,
-    dozenQty,
-    size,
-    featured,
-    categoryId,
-    order,
-    images = [],
-    active,
-  } = body as Partial<Product>
+  try {
+    const body = await req.json();
 
-  // upsert product
-  const [product] = await sql /* sql */`
-    insert into products (
-      id, slug, sku, name, short_description, description, price, stock, dozen_qty, size, featured, active, category_id, "order"
-    )
-    values (
-      ${id ?? null},
-      ${slug},
-      ${sku},
-      ${name as any},
-      ${shortDescription as any},
-      ${description as any},
-      ${price ?? 0},
-      ${stock ?? 0},
-      ${dozenQty ?? null},
-      ${size ?? null},
-      ${featured ?? false},
-      ${active ?? true},
-      ${categoryId ?? null},
-      ${order ?? 0}
-    )
-    on conflict (id)
-    do update set
-      slug = excluded.slug,
-      sku = excluded.sku,
-      name = excluded.name,
-      short_description = excluded.short_description,
-      description = excluded.description,
-      price = excluded.price,
-      stock = excluded.stock,
-      dozen_qty = excluded.dozen_qty,
-      size = excluded.size,
-      featured = excluded.featured,
-      active = excluded.active,
-      category_id = excluded.category_id,
-      "order" = excluded."order"
-    returning id;
-  `
+    const result = await query<Product>(/* sql */`
+      INSERT INTO products (
+        slug, sku, name, short_description, description,
+        price, stock, dozen_qty, size, featured,
+        category_id, "order"
+      )
+      VALUES (
+        $1, $2, $3::jsonb, $4::jsonb, $5::jsonb,
+        $6, $7, $8, $9, $10,
+        $11, $12
+      )
+      RETURNING *
+    `, [
+      body.slug,
+      body.sku,
+      JSON.stringify(body.name),
+      JSON.stringify(body.shortDescription),
+      JSON.stringify(body.description),
+      body.price,
+      body.stock,
+      body.dozenQty,
+      body.size,
+      body.featured,
+      body.categoryId,
+      body.order
+    ]);
 
-  // replace images
-  await sql /* sql */`delete from product_images where product_id = ${product.id};`
-
-  if (Array.isArray(images) && images.length > 0) {
-    for (let i = 0; i < images.length; i++) {
-      const img = images[i]
-      await sql /* sql */`
-        insert into product_images (id, product_id, src, caption, position)
-        values (${img.id}, ${product.id}, ${img.src}, ${img.caption as any}, ${img.position ?? i})
-      `
-    }
+    return NextResponse.json(result[0]);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, id: product.id })
 }
