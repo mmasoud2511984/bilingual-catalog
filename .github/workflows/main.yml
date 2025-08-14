@@ -60,7 +60,5 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script_stop: true
           script: |
-            set -e
-            # شغّل سكربت النشر لديك
             bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
 
