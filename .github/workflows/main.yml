@@ -21,7 +21,6 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script_stop: true
           script: |
-            set -e
             APP_DIR="/root/bilingual-catalog/bilingual-catalog"
             FORCE="${{ github.event.inputs.force }}"
             echo "== FORCE = ${FORCE}"
