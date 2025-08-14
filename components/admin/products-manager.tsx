@@ -4,7 +4,7 @@ import React from "react"
 
 import { useState } from "react"
 import {
-  getAllProducts,
+  getAllProductsForAdmin,
   getAllCategories,
   type Product,
   saveProduct,
@@ -27,7 +27,7 @@ import { generateId } from "@/lib/utils"
 
 export function ProductsManager() {
   const { lang } = useLanguage()
-  const [items, setItems] = useState(getAllProducts())
+  const [items, setItems] = useState(getAllProductsForAdmin())
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const cats = getAllCategories()
 
@@ -39,7 +39,7 @@ export function ProductsManager() {
 
   const handleSave = (product: Product) => {
     saveProduct(product)
-    setItems(getAllProducts())
+    setItems(getAllProductsForAdmin())
     setEditingProduct(null)
   }
 
@@ -103,7 +103,14 @@ function SortableRow({ product, onEdit }: { product: Product; onEdit: (product: 
         className="h-12 w-16 object-cover rounded"
       />
       <div className="flex-1">
-        <div className="font-medium">{product.name[lang] || product.name.en || product.name.ar}</div>
+        <div className="font-medium flex items-center gap-2">
+          {product.name[lang] || product.name.en || product.name.ar}
+          {product.active === false && (
+            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+              {lang === "ar" ? "معطل" : "Inactive"}
+            </span>
+          )}
+        </div>
         <div className="text-xs text-muted-foreground">{product.sku}</div>
       </div>
       <div className="flex gap-1">
@@ -147,6 +154,7 @@ function Editor({
 }) {
   const { lang } = useLanguage()
   const [f, setF] = useState<Product>(editingProduct || blankProduct())
+  const [items, setItems] = useState(getAllProductsForAdmin()) // Declare setItems here
 
   // Update form when editingProduct changes
   React.useEffect(() => {
@@ -162,6 +170,7 @@ function Editor({
     if (!editingProduct) {
       setF(blankProduct()) // Reset form only for new products
     }
+    setItems(getAllProductsForAdmin()) // تحديث القائمة
   }
 
   const handleCancel = () => {
@@ -201,8 +210,10 @@ function Editor({
                 <Label>{lang === "ar" ? "السعر" : "Price"}</Label>
                 <Input
                   type="number"
+                  step="0.01"
+                  min="0"
                   value={String(f.price)}
-                  onChange={(e) => setF({ ...f, price: Number(e.target.value || 0) })}
+                  onChange={(e) => setF({ ...f, price: Number.parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div>
@@ -245,14 +256,25 @@ function Editor({
                 </Select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="featured"
-                type="checkbox"
-                checked={!!f.featured}
-                onChange={(e) => setF({ ...f, featured: e.target.checked })}
-              />
-              <Label htmlFor="featured">{lang === "ar" ? "مميز" : "Featured"}</Label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  id="featured"
+                  type="checkbox"
+                  checked={!!f.featured}
+                  onChange={(e) => setF({ ...f, featured: e.target.checked })}
+                />
+                <Label htmlFor="featured">{lang === "ar" ? "مميز" : "Featured"}</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="active"
+                  type="checkbox"
+                  checked={f.active !== false}
+                  onChange={(e) => setF({ ...f, active: e.target.checked })}
+                />
+                <Label htmlFor="active">{lang === "ar" ? "مفعل" : "Active"}</Label>
+              </div>
             </div>
           </TabsContent>
           <TabsContent value="media" className="grid gap-3">
@@ -424,6 +446,7 @@ function blankProduct(): Product {
     dozenQty: 0,
     size: "",
     featured: false,
+    active: true, // إضافة جديدة
     categoryId: undefined,
     createdAt: Date.now(),
     order: 0,

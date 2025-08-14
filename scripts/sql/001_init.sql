@@ -22,6 +22,7 @@ create table if not exists products (
   dozen_qty int,
   size text,
   featured boolean not null default false,
+  active boolean not null default true,  -- إضافة جديدة
   category_id uuid references categories(id) on delete set null,
   created_at timestamptz not null default now(),
   "order" int not null default 0

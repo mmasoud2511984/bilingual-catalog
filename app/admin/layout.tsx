@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { AdminAuthProvider } from "@/components/admin/auth-context"
 import { useLanguage } from "@/components/language-provider"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Settings, Package, FolderOpen, ShoppingBag, Menu, X } from "lucide-react"
+import { LayoutDashboard, Settings, Package, FolderOpen, ShoppingBag, Menu, X, Home, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 
@@ -16,6 +16,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const navigation = [
+    {
+      name: lang === "ar" ? "الصفحة الرئيسية" : "Home",
+      href: "/",
+      icon: Home,
+    },
+    {
+      name: lang === "ar" ? "العودة" : "Back",
+      href: "javascript:history.back()",
+      icon: ArrowLeft,
+      onClick: () => window.history.back(),
+    },
     {
       name: lang === "ar" ? "لوحة التحكم" : "Dashboard",
       href: "/admin",
@@ -73,13 +84,19 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <nav className="flex-1 px-2 space-y-1">
               {navigation.map((item) => {
                 const isActive = pathname === item.href
+                const Component = item.onClick ? "button" : Link
+                const props = item.onClick ? { onClick: item.onClick, type: "button" as const } : { href: item.href }
+
                 return (
-                  <Link
+                  <Component
                     key={item.name}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
+                    {...props}
+                    onClick={() => {
+                      setSidebarOpen(false)
+                      if (item.onClick) item.onClick()
+                    }}
                     className={cn(
-                      "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                      "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors w-full text-left",
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -87,7 +104,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   >
                     <item.icon className={cn("mr-3 flex-shrink-0 h-5 w-5", lang === "ar" ? "ml-3 mr-0" : "")} />
                     {item.name}
-                  </Link>
+                  </Component>
                 )
               })}
             </nav>

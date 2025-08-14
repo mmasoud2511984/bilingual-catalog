@@ -58,12 +58,13 @@ export async function POST(req: Request) {
     categoryId,
     order,
     images = [],
+    active,
   } = body as Partial<Product>
 
   // upsert product
   const [product] = await sql /* sql */`
     insert into products (
-      id, slug, sku, name, short_description, description, price, stock, dozen_qty, size, featured, category_id, "order"
+      id, slug, sku, name, short_description, description, price, stock, dozen_qty, size, featured, active, category_id, "order"
     )
     values (
       ${id ?? null},
@@ -77,6 +78,7 @@ export async function POST(req: Request) {
       ${dozenQty ?? null},
       ${size ?? null},
       ${featured ?? false},
+      ${active ?? true},
       ${categoryId ?? null},
       ${order ?? 0}
     )
@@ -92,6 +94,7 @@ export async function POST(req: Request) {
       dozen_qty = excluded.dozen_qty,
       size = excluded.size,
       featured = excluded.featured,
+      active = excluded.active,
       category_id = excluded.category_id,
       "order" = excluded."order"
     returning id;

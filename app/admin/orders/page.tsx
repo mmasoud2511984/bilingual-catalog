@@ -3,7 +3,7 @@
 import { AdminGate } from "@/components/admin/admin-gate"
 import { getAllOrders, updateOrderStatus, deleteOrder } from "@/lib/store"
 import { useLanguage } from "@/components/language-provider"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,43 @@ export default function OrdersPage() {
   const { lang } = useLanguage()
   const [orders, setOrders] = useState(getAllOrders())
   const [loading, setLoading] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<string>("date_desc")
+
+  const filteredAndSortedOrders = useMemo(() => {
+    let filtered = orders
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((order) => order.status === statusFilter)
+    }
+
+    // Sort orders
+    switch (sortBy) {
+      case "date_asc":
+        filtered.sort((a, b) => a.createdAt - b.createdAt)
+        break
+      case "date_desc":
+        filtered.sort((a, b) => b.createdAt - a.createdAt)
+        break
+      case "status":
+        filtered.sort((a, b) => a.status.localeCompare(b.status))
+        break
+      case "amount_asc":
+        filtered.sort((a, b) => a.totalAmount - b.totalAmount)
+        break
+      case "amount_desc":
+        filtered.sort((a, b) => b.totalAmount - a.totalAmount)
+        break
+      case "customer":
+        filtered.sort((a, b) => a.customerName.localeCompare(b.customerName))
+        break
+      default:
+        filtered.sort((a, b) => b.createdAt - a.createdAt)
+    }
+
+    return filtered
+  }, [orders, statusFilter, sortBy])
 
   // Function to fetch orders from server
   const fetchOrdersFromServer = async () => {
@@ -132,21 +169,68 @@ export default function OrdersPage() {
           </div>
         </div>
 
+        {/* Sorting and filtering tools */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={lang === "ar" ? "فرز حسب الحالة" : "Filter by Status"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{lang === "ar" ? "جميع الحالات" : "All Status"}</SelectItem>
+                <SelectItem value="pending">{lang === "ar" ? "قيد الانتظار" : "Pending"}</SelectItem>
+                <SelectItem value="confirmed">{lang === "ar" ? "مؤكد" : "Confirmed"}</SelectItem>
+                <SelectItem value="shipped">{lang === "ar" ? "تم الشحن" : "Shipped"}</SelectItem>
+                <SelectItem value="delivered">{lang === "ar" ? "تم التسليم" : "Delivered"}</SelectItem>
+                <SelectItem value="cancelled">{lang === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={lang === "ar" ? "ترتيب حسب" : "Sort by"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date_desc">{lang === "ar" ? "الأحدث أولاً" : "Newest First"}</SelectItem>
+                <SelectItem value="date_asc">{lang === "ar" ? "الأقدم أولاً" : "Oldest First"}</SelectItem>
+                <SelectItem value="status">{lang === "ar" ? "الحالة" : "Status"}</SelectItem>
+                <SelectItem value="amount_desc">{lang === "ar" ? "المبلغ (الأعلى)" : "Amount (High)"}</SelectItem>
+                <SelectItem value="amount_asc">{lang === "ar" ? "المبلغ (الأقل)" : "Amount (Low)"}</SelectItem>
+                <SelectItem value="customer">{lang === "ar" ? "اسم العميل" : "Customer Name"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="text-sm text-muted-foreground flex items-center">
+            {lang === "ar"
+              ? `عرض ${filteredAndSortedOrders.length} من ${orders.length} طلب`
+              : `Showing ${filteredAndSortedOrders.length} of ${orders.length} orders`}
+          </div>
+        </div>
+
         {loading && (
           <div className="text-center py-4">
             <div className="text-muted-foreground">{lang === "ar" ? "جاري تحميل الطلبات..." : "Loading orders..."}</div>
           </div>
         )}
 
-        {orders.length === 0 && !loading ? (
+        {filteredAndSortedOrders.length === 0 && !loading ? (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="text-muted-foreground">{lang === "ar" ? "لا توجد طلبات بعد" : "No orders yet"}</div>
+              <div className="text-muted-foreground">
+                {statusFilter === "all"
+                  ? lang === "ar"
+                    ? "لا توجد طلبات بعد"
+                    : "No orders yet"
+                  : lang === "ar"
+                    ? "لا توجد طلبات بهذه الحالة"
+                    : "No orders with this status"}
+              </div>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {orders.map((order) => (
+            {filteredAndSortedOrders.map((order) => (
               <Card key={order.id}>
                 <CardHeader className="pb-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">

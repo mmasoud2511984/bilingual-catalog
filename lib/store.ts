@@ -23,6 +23,7 @@ export type Product = {
   dozenQty?: number
   size?: string
   featured?: boolean
+  active?: boolean // إضافة جديدة
   categoryId?: string
   createdAt: number
   order: number
@@ -178,6 +179,11 @@ export function saveSettings(s: Settings) {
 }
 
 export function getAllProducts(): Product[] {
+  const arr = safeLocalGet<Product[]>(KEYS.products, [])
+  return arr.filter((p) => p.active !== false).sort((a, b) => a.order - b.order)
+}
+
+export function getAllProductsForAdmin(): Product[] {
   const arr = safeLocalGet<Product[]>(KEYS.products, [])
   return arr.sort((a, b) => a.order - b.order)
 }
