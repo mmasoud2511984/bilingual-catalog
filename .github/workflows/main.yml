@@ -1,4 +1,4 @@
-name: Manual Deployment
+  name: Manual Deployment
 
 on:
   workflow_dispatch:
@@ -52,14 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run deploy script on server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT }}
-          script_stop: true
-          script: |
-            set -e
-            # شغّل سكربت النشر لديك
-            bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
+          uses: appleboy/ssh-action@v1.0.3
+            with:
+    host: ${{ secrets.VPS_HOST }}
+    username: ${{ secrets.VPS_USER }}
+    password: ${{ secrets.VPS_PASSWORD }}
+    port: ${{ secrets.VPS_PORT }}
+    script_stop: true
+    script: |
+      sed -i 's/\r$//' /root/bilingual-catalog/bilingual-catalog/deploy.sh
+      bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
+
