@@ -1,3 +1,4 @@
+name: Manual Deployment
 
 on:
   workflow_dispatch:
@@ -6,7 +7,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Check modified files on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /root/bilingual-catalog/bilingual-catalog
+            echo "=== Checking modified files on server ==="
+            git fetch --all --prune
+            CHANGES=$(git status --porcelain)
+            if [ -n "$CHANGES" ]; then
+              echo "⚠️ The following files have been modified on the server:"
+              echo "$CHANGES"
+              echo "Please review these changes before deploying."
+              exit 1
+            else
+              echo "✅ No local changes detected. Proceeding with deployment..."
+            fi
+
       - name: Run deploy script on server
+        if: success()
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -15,6 +38,3 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
-
-            name: Manual Deployment
-
