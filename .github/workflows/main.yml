@@ -12,7 +12,7 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     steps:
-      - name: Preflight check on server (normalize FORCE, show changes)
+      - name: Preflight check on server (no GITHUB_STEP_SUMMARY writes)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -39,17 +39,14 @@ jobs:
             CHANGES_ALL="$(git status --porcelain || true)"
             echo "${CHANGES_ALL}"
 
+            # تجاهل deploy.sh من قرار الإيقاف
             CHANGES_FILTERED="$(echo "${CHANGES_ALL}" | grep -vE '^\?\?\s+deploy\.sh$' || true)"
             COUNT=$(echo "${CHANGES_FILTERED}" | sed '/^\s*$/d' | wc -l | tr -d ' ')
-
-            echo "### تغييرات فعّالة (باستثناء deploy.sh): ${COUNT}" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "${CHANGES_FILTERED}" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "== Effective changes (excluding deploy.sh): ${COUNT} =="
 
             if [ "$COUNT" -gt 0 ] && [ "$FORCE" != "true" ]; then
               echo "::error::تم رصد تعديلات محلية على السيرفر. أوقفنا النشر."
-              echo "أعد تشغيل الـ workflow واختر force=true للاستمرار رغم التعديلات." >> $GITHUB_STEP_SUMMARY
+              echo "أعد تشغيل الـ workflow واختر force=true للاستمرار رغم التعديلات."
               exit 1
             fi
 
@@ -69,6 +66,6 @@ jobs:
           script_stop: true
           script: |
             set -e
-            # ضمان ترميز LF في السكربت (لو رُفع من ويندوز)
+            # تأكد من ترميز LF ثم نفّذ السكربت
             sed -i 's/\r$//' /root/bilingual-catalog/bilingual-catalog/deploy.sh
             bash /root/bilingual-catalog/bilingual-catalog/deploy.sh
